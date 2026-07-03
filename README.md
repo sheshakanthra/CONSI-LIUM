@@ -172,19 +172,6 @@ consilium/
 
 ---
 
-## `08` — Build Roadmap
-
-- [x] **Phase 0** — Monorepo scaffold, containerized stack, pgvector bootstrap
-- [ ] **Phase 1** — Ingestion: PDF parsing, table extraction, ASR transcription
-- [ ] **Phase 2** — Hybrid RAG: Document QA + Table QA retrieval core
-- [ ] **Phase 3** — Multi-agent orchestration graph (LangGraph)
-- [ ] **Phase 4** — Time-series forecasting signal integration
-- [ ] **Phase 5** — Eval harness, guardrails, CI faithfulness gate
-- [ ] **Phase 6** — Dashboard + agent trace viewer
-- [ ] **Phase 7** — Deployment, cost guardrails, public demo
-
----
-
 ## `09` — Evaluation Methodology
 
 Every retrieval and agent-reasoning claim is measured, not assumed:
@@ -194,12 +181,6 @@ Every retrieval and agent-reasoning claim is measured, not assumed:
 - **CI eval-gate** — pull requests are blocked if faithfulness or fact-check accuracy regress below threshold
 
 > Results populate here once Phase 5 lands.
-
----
-
-## `10` — Disclaimer
-
-Consilium is a research and engineering portfolio project. Outputs — including the quantitative forecasting signal — are **not investment advice** and carry no guarantee of accuracy. Always verify against primary source filings.
 
 ---
 
