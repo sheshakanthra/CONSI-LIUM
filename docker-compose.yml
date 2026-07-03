@@ -1,0 +1,65 @@
+# CONSILIUM local dev stack: Postgres+pgvector, API, web.
+# WHY docker-compose: CLAUDE.md's definition of "done" requires each phase to
+# run end-to-end locally via docker-compose. This is that baseline.
+
+# WHY an explicit project name: without it Compose derives the project (and
+# thus container/network/volume prefixes) from the directory name, which is
+# COLLISIUM. Pinning it keeps everything named after the project regardless of
+# the folder it's checked out into.
+name: consilium
+
+services:
+  db:
+    # pgvector's official image = Postgres 16 with the vector extension
+    # available. The init script (mounted below) actually enables it.
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: consilium
+      POSTGRES_PASSWORD: consilium
+      POSTGRES_DB: consilium
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Bootstrap SQL: enables the vector extension on first init.
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # WHY: gate the API on real DB readiness, not just "container started".
+      test: ["CMD-SHELL", "pg_isready -U consilium -d consilium"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/api
+    environment:
+      # Note the service name "db" as host — compose's internal DNS resolves it.
+      DATABASE_URL: postgresql+asyncpg://consilium:consilium@db:5432/consilium
+      APP_NAME: consilium-api
+      ENVIRONMENT: development
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      # Python one-liner so we don't add curl to the slim image.
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  web:
+    build:
+      context: ./apps/web
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

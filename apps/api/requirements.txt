@@ -1,0 +1,15 @@
+# CONSILIUM API — pinned to the stack locked in CLAUDE.md (Python 3.11).
+# Business-logic deps (langgraph, langchain, faster-whisper, ragas) are
+# intentionally omitted from the scaffold and added per-phase.
+
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.1
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+
+# Test tooling (see tests/ — required for a phase to be "done" per CLAUDE.md).
+pytest==8.3.4
+pytest-asyncio==0.25.2
+httpx==0.28.1
