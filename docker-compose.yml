@@ -38,8 +38,22 @@ services:
       DATABASE_URL: postgresql+asyncpg://consilium:consilium@db:5432/consilium
       APP_NAME: consilium-api
       ENVIRONMENT: development
+      # Ingestion reads local samples from the mounted /data tree (see volumes).
+      FILINGS_DIR: /data/filings
+      TRANSCRIPTS_DIR: /data/transcripts
+      # faster-whisper settings (tiny/CPU/int8 for fast, GPU-free local runs).
+      WHISPER_MODEL: tiny
+      WHISPER_DEVICE: cpu
+      WHISPER_COMPUTE_TYPE: int8
+      # Cache Whisper weights under the mounted HF cache so they download once.
+      HF_HOME: /root/.cache/huggingface
     ports:
       - "8000:8000"
+    volumes:
+      # Raw sample inputs (gitignored on the host) available to the container.
+      - ./data:/data
+      # Persist downloaded Whisper model weights across container restarts.
+      - hf_cache:/root/.cache/huggingface
     depends_on:
       db:
         condition: service_healthy
@@ -63,3 +77,4 @@ services:
 
 volumes:
   pgdata:
+  hf_cache:

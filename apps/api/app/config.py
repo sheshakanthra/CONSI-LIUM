@@ -26,6 +26,31 @@ class Settings(BaseSettings):
     app_name: str = "consilium-api"
     environment: str = "development"
 
+    # --- Ingestion: source directories --------------------------------------
+    # Where the ingestion layer looks for local sample inputs. Defaults are
+    # repo-relative (host dev); docker-compose overrides them to the mounted
+    # /data path. Kept as plain str (not Path) so env overrides stay trivial.
+    filings_dir: str = "data/filings"
+    transcripts_dir: str = "data/transcripts"
+
+    # --- Ingestion: text chunking -------------------------------------------
+    # Character-based windows over extracted filing text. Small and overlapping
+    # so later retrieval keeps sentences that straddle a boundary. Deliberately
+    # simple for now — token-aware/semantic chunking is a retrieval-phase
+    # concern, not an ingestion one.
+    chunk_size: int = 1000
+    chunk_overlap: int = 150
+
+    # --- Ingestion: ASR (faster-whisper) ------------------------------------
+    # "tiny" keeps local dev + CI fast and CPU-friendly; swap to a larger model
+    # (or the Whisper API, per CLAUDE.md) in prod. int8 on CPU is the fastest
+    # compute type that faster-whisper supports without a GPU.
+    whisper_model: str = "tiny"
+    whisper_device: str = "cpu"
+    whisper_compute_type: str = "int8"
+    # None => let Whisper auto-detect the spoken language.
+    whisper_language: str | None = None
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

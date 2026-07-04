@@ -15,8 +15,21 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.orm import DeclarativeBase
 
 from app.config import get_settings
+
+
+class Base(DeclarativeBase):
+    """Declarative base for all ORM models.
+
+    WHY a single shared Base: every table's metadata registers here, so
+    ``Base.metadata.create_all`` (and, later, Alembic autogenerate) sees the
+    whole schema from one place. Models live in their domain packages (e.g.
+    ``ingestion.models``) but all inherit from this Base so the schema stays
+    unified. Keeping the Base in the db layer — not in a domain package — avoids
+    import cycles when multiple domains define tables.
+    """
 
 # Created at import time so the connection pool is shared process-wide. The
 # asyncpg driver is implied by the URL scheme (postgresql+asyncpg://).

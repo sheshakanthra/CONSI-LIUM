@@ -1,6 +1,6 @@
 # CONSILIUM API — pinned to the stack locked in CLAUDE.md (Python 3.11).
-# Business-logic deps (langgraph, langchain, faster-whisper, ragas) are
-# intentionally omitted from the scaffold and added per-phase.
+# Remaining business-logic deps (langgraph, langchain, ragas) are added
+# per-phase; this file covers the scaffold + the Phase 1 ingestion layer.
 
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
@@ -8,6 +8,20 @@ pydantic==2.10.4
 pydantic-settings==2.7.1
 sqlalchemy[asyncio]==2.0.36
 asyncpg==0.30.0
+
+# --- Ingestion (Phase 1) ----------------------------------------------------
+# pdfplumber: extracts BOTH page text and structured tables from the same PDF,
+# so tables can be stored as rows/JSONB instead of being flattened into prose.
+pdfplumber==0.11.4
+# faster-whisper: local CTranslate2 Whisper for the ASR pipeline (CLAUDE.md
+# locks ASR to faster-whisper for dev). Pulls ctranslate2, tokenizers, av, etc.
+faster-whisper==1.0.3
+# requests: imported by faster-whisper.utils but not always pulled in
+# transitively by its huggingface_hub pin — declare it explicitly.
+requests==2.32.3
+# reportlab: generates the deterministic synthetic sample filings used as test
+# input (real NSE scraping is out of scope this phase). Test/tooling only.
+reportlab==4.2.5
 
 # Test tooling (see tests/ — required for a phase to be "done" per CLAUDE.md).
 pytest==8.3.4
