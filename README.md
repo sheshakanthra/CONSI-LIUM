@@ -184,9 +184,4 @@ Every retrieval and agent-reasoning claim is measured, not assumed:
 
 ---
 
-<div align="center">
 
-**Built by [Sheshakanth](https://github.com/sheshakanthra)**
-*AI Systems Engineering — B.Tech IT, Chennai Institute of Technology*
-
-</div>
