@@ -35,10 +35,16 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
+from pgvector.sqlalchemy import Vector
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.config import get_settings
 from app.db import Base
+
+# Embedding dimensionality is pinned by the chosen model (bge-small-en-v1.5 =>
+# 384). Read from settings so the column and the embedder can't drift apart.
+_EMBEDDING_DIM = get_settings().embedding_dim
 
 
 class Filing(Base):
@@ -51,6 +57,9 @@ class Filing(Base):
     # would set e.g. "nse" plus a source URL.
     source: Mapped[str] = mapped_column(String(64), nullable=False, default="local_sample")
     company: Mapped[str | None] = mapped_column(String(256))
+    # Ticker symbol used to scope retrieval per-company. Populated by ingestion
+    # (derived from the document) / backfilled by the retrieval indexer.
+    ticker: Mapped[str | None] = mapped_column(String(16), index=True)
     title: Mapped[str | None] = mapped_column(Text)
     file_name: Mapped[str] = mapped_column(String(512), nullable=False)
     file_path: Mapped[str] = mapped_column(Text, nullable=False)
@@ -94,6 +103,9 @@ class FilingChunk(Base):
     page_number: Mapped[int | None] = mapped_column(Integer)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     char_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Nullable: populated by the retrieval indexer after ingestion, not at
+    # write time. Dim pinned to the embedding model (see _EMBEDDING_DIM).
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(_EMBEDDING_DIM))
     created_at: Mapped[dt.datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -176,6 +188,8 @@ class TranscriptSegment(Base):
     start_seconds: Mapped[float] = mapped_column(Float, nullable=False)
     end_seconds: Mapped[float] = mapped_column(Float, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
+    # Nullable: populated by the retrieval indexer (same as filing chunks).
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(_EMBEDDING_DIM))
     created_at: Mapped[dt.datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

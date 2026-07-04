@@ -23,6 +23,22 @@ requests==2.32.3
 # input (real NSE scraping is out of scope this phase). Test/tooling only.
 reportlab==4.2.5
 
+# --- Retrieval (Phase 2) ----------------------------------------------------
+# fastembed: ONNX-runtime sentence embeddings (Qdrant). Chosen over
+# sentence-transformers to AVOID pulling torch (~1 GB) — it reuses the
+# onnxruntime already present from faster-whisper, keeps the image lean, and
+# ships BAAI/bge-small-en-v1.5 (384-dim), a top small retrieval model. See
+# docs/phase2-rag.md for the cost/latency/quality justification.
+fastembed==0.4.2
+# pgvector: SQLAlchemy Vector column type + distance operators for pgvector.
+pgvector==0.3.6
+
+# --- Agents (Phase 3) -------------------------------------------------------
+# LangGraph: explicit StateGraph orchestration for the multi-agent research
+# graph (CLAUDE.md locks orchestration to LangGraph). Pulls langchain-core.
+# Ranged pin: the StateGraph/START/END API we use is stable across 0.2–0.4.
+langgraph>=0.2.50,<0.5
+
 # Test tooling (see tests/ — required for a phase to be "done" per CLAUDE.md).
 pytest==8.3.4
 pytest-asyncio==0.25.2

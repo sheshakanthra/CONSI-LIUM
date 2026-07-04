@@ -51,6 +51,23 @@ class Settings(BaseSettings):
     # None => let Whisper auto-detect the spoken language.
     whisper_language: str | None = None
 
+    # --- Retrieval: embeddings (Phase 2) ------------------------------------
+    # BAAI/bge-small-en-v1.5 via fastembed (ONNX): 384-dim, CPU-friendly, free,
+    # strong small-model retrieval quality. Dim must match the pgvector columns.
+    embedding_model: str = "BAAI/bge-small-en-v1.5"
+    embedding_dim: int = 384
+    # Where fastembed caches downloaded ONNX weights (under the mounted HF cache
+    # volume so it downloads once).
+    embedding_cache_dir: str = "/root/.cache/huggingface/fastembed"
+
+    # --- Retrieval: search + answering --------------------------------------
+    retrieval_top_k: int = 5
+    # Cosine-similarity floor (0..1) below which a vector hit is treated as
+    # weak; feeds the confidence banding and "insufficient evidence" path.
+    retrieval_min_similarity: float = 0.35
+    # Reciprocal-rank-fusion constant for blending vector + keyword rankings.
+    rrf_k: int = 60
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

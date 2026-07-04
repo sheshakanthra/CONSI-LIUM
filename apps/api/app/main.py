@@ -1,8 +1,8 @@
 """FastAPI application entrypoint.
 
 WHY this file stays thin: per CLAUDE.md the agent/business logic lives in
-dedicated modules (agents/ etc.). This is the composition root only — it wires
-config, the app instance, and a health check. No business logic yet.
+dedicated modules. This is the composition root only — it wires config, the app
+instance, the health check, and mounts each layer's router.
 """
 
 from fastapi import FastAPI
@@ -10,14 +10,18 @@ from sqlalchemy import text
 
 from app.config import get_settings
 from app.db import engine
+from retrieval.api import router as qa_router
 
 settings = get_settings()
 
 app = FastAPI(
     title=settings.app_name,
-    version="0.1.0",
-    description="CONSILIUM API — scaffold. No business logic yet.",
+    version="0.2.0",
+    description="CONSILIUM API — ingestion + retrieval/QA.",
 )
+
+# Retrieval/QA endpoints (POST /qa).
+app.include_router(qa_router)
 
 
 @app.get("/health", tags=["ops"])
