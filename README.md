@@ -1,105 +1,192 @@
-# CONSILIUM
+<div align="center">
 
-A multi-agent research-and-analysis platform built on a LangGraph agent graph,
-retrieval over `pgvector`, and a fact-checking pipeline as its core
-differentiator. Solo-built portfolio project by **Sheshakanth**.
+# ⚡ CONSILIUM
 
-> **Status:** Phase 01 — scaffold only. No business logic yet. See
-> [`docs/01-scaffold.md`](docs/01-scaffold.md).
+### Multi-Agent LLM Research Engine for Automated Equity Analysis
 
-## Architecture
+*Deliberate. Cross-examine. Synthesize. Cite.*
 
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-async-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-orchestration-1C3C3C?style=for-the-badge&logo=chainlink&logoColor=white)](https://langchain-ai.github.io/langgraph/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%20%2B%20pgvector-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![License](https://img.shields.io/badge/License-MIT-white?style=for-the-badge)](#license)
+
+<br/>
+
+[![Status](https://img.shields.io/badge/status-active--development-yellow?style=flat-square)]()
+[![Phase](https://img.shields.io/badge/phase-1%20%2F%207-blue?style=flat-square)]()
+[![Build](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)]()
+
+</div>
+
+---
+
+## `01` — Overview
+
+**Consilium** *(Latin: a deliberative council)* is a production-patterned, multi-agent LLM system that automates equity research the way a real analyst desk would — not with a single model summarizing a document, but with a graph of specialized agents that **argue, cross-examine, and independently verify each other** before producing a sourced research note.
+
+> Retail traders and junior analysts burn hours cross-referencing earnings-call commentary against filed financials before trusting a claim. Consilium compresses that workflow into a single auditable pipeline — every output is traceable back to a source PDF page, table cell, or transcript timestamp.
+
+This is not a wrapper around a chat completion. It is a **stateful agentic system** with independent tool-using verification, structured schema contracts between nodes, and a CI-gated evaluation harness.
+
+---
+
+## `02` — System Architecture
+
+```mermaid
+flowchart TD
+    A[["📄 Filings (PDF)"]] --> ING[Ingestion Layer]
+    B[["🎙️ Earnings Call Audio"]] --> ING
+    ING --> DB[(Postgres + pgvector)]
+
+    DB --> RET[Retrieval Agent<br/><i>hybrid vector + table routing</i>]
+
+    RET --> BULL[Bull Agent<br/><i>evidence-backed bull thesis</i>]
+    RET --> BEAR[Bear Agent<br/><i>evidence-backed bear thesis</i>]
+
+    BULL --> FC[Fact-Checker Agent<br/><i>independent re-query per claim</i>]
+    BEAR --> FC
+
+    QT[Quant Agent<br/><i>time-series forecast signal</i>] --> SYN
+
+    FC --> SYN[Synthesizer Agent<br/><i>final research note + citations</i>]
+
+    SYN --> OUT[["📊 Structured Research Report"]]
+
+    style ING fill:#0a0a0a,stroke:#00FFCC,color:#00FFCC
+    style RET fill:#0a0a0a,stroke:#00FFCC,color:#00FFCC
+    style FC fill:#0a0a0a,stroke:#ff3366,color:#ff3366
+    style SYN fill:#0a0a0a,stroke:#00FFCC,color:#00FFCC
+    style OUT fill:#0a0a0a,stroke:#00FFCC,color:#00FFCC
 ```
-                          ┌──────────────────────────┐
-   Browser ──────────────▶│  apps/web  (Next.js 15)   │
-                          │  App Router + Tailwind     │
-                          └────────────┬──────────────┘
-                                       │  HTTP (NEXT_PUBLIC_API_BASE_URL)
-                                       ▼
-                          ┌──────────────────────────┐
-                          │  apps/api  (FastAPI)      │
-                          │  LangGraph agent graph *   │
-                          │  async SQLAlchemy 2.0      │
-                          └────────────┬──────────────┘
-                                       │  asyncpg (DATABASE_URL)
-                                       ▼
-                          ┌──────────────────────────┐
-                          │  db (Postgres 16)          │
-                          │  + pgvector extension      │
-                          └──────────────────────────┘
 
-   * agent graph, retrievers, ASR, and the fact-checking node arrive in
-     later phases — see the roadmap in CLAUDE.md.
+**Design principle:** every edge in this graph carries a validated Pydantic schema, not a raw string. No agent output reaches another agent without passing structural validation first.
+
+---
+
+## `03` — Agent Graph Breakdown
+
+| Node | Role | Agentic Behavior |
+|---|---|---|
+| `retrieval_agent` | Hybrid vector + structured-table routing | Decides retrieval strategy per query type |
+| `bull_agent` | Constructs the strongest evidence-backed bullish thesis | Schema-constrained generation, citation-bound |
+| `bear_agent` | Constructs the strongest evidence-backed bearish thesis | Schema-constrained generation, citation-bound |
+| `fact_checker_agent` | **Independently re-queries retrieval per claim** and labels each `SUPPORTED` / `CONTRADICTED` / `UNVERIFIABLE` | Fully agentic — autonomous tool use, per-claim loop |
+| `quant_agent` | Time-series forecast signal, explicit agreement/disagreement vs. qualitative thesis | Structured signal generation |
+| `synthesizer_agent` | Aggregates all node outputs into a cited, structured research note | Deterministic aggregation |
+
+---
+
+## `04` — Tech Stack
+
+<table>
+<tr>
+<td valign="top" width="33%">
+
+**Backend**
+- Python 3.11
+- FastAPI (async)
+- Pydantic v2
+- SQLAlchemy 2.0 (async)
+- LangGraph / LangChain
+
+</td>
+<td valign="top" width="33%">
+
+**Data & Retrieval**
+- PostgreSQL 16 + `pgvector`
+- Hybrid vector + keyword search
+- faster-whisper (ASR)
+- Document / Table QA routing
+
+</td>
+<td valign="top" width="33%">
+
+**Frontend & Ops**
+- Next.js 15 (App Router)
+- TypeScript + Tailwind
+- Docker Compose
+- RAGAS eval harness
+- GitHub Actions CI eval-gate
+
+</td>
+</tr>
+</table>
+
+---
+
+## `05` — Core Capabilities
+
+- **Hybrid RAG** over unstructured filings and structured financial tables — routed, not flattened
+- **Timestamped ASR pipeline** for earnings call audio with citation-grade traceability
+- **Independent fact-checking layer** that re-verifies every claim against source documents rather than trusting upstream agents
+- **Time-series forecasting signal** with explicit agreement/disagreement reasoning against the qualitative thesis
+- **Full citation resolution** — every claim in the final report links back to a source chunk, table cell, or transcript timestamp
+- **LLMOps eval gate** — RAGAS faithfulness/precision scoring + fact-checker accuracy validation, enforced in CI
+
+---
+
+## `06` — Quickstart
+
+```bash
+# clone
+git clone https://github.com/sheshakanthra/CONSI-LIUM.git consilium
+cd consilium
+
+# environment
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
+
+# boot the full stack
+docker-compose up
 ```
 
-> _Architecture diagram placeholder — replace with a rendered diagram
-> (e.g. Excalidraw / Mermaid export) as the agent graph solidifies._
+| Service | URL |
+|---|---|
+| API health | `http://localhost:8000/health` |
+| Web dashboard | `http://localhost:3000/dashboard` |
+| Postgres | `localhost:5432` |
 
-## Repository layout
+---
+
+## `07` — Repository Structure
 
 ```
 consilium/
-  apps/
-    api/            # FastAPI service (health check, config, async DB engine)
-    web/            # Next.js 15 dashboard
-  packages/
-    shared-types/   # Zod/Pydantic schema-parity definitions (later)
-  eval/
-    golden_set/     # golden-set fixtures (later)
-    scripts/        # RAGAS + custom harness (later)
-  data/             # gitignored — raw filings & transcripts
-  infra/
-    postgres/init/  # pgvector bootstrap SQL
-  docs/             # per-phase design notes
-  docker-compose.yml
+├── apps/
+│   ├── api/              # FastAPI service — ingestion, retrieval, agent graph
+│   └── web/               # Next.js dashboard + trace viewer
+├── packages/
+│   └── shared-types/       # Cross-language schema parity
+├── eval/
+│   ├── golden_set/          # Hand-curated Q&A + fact-check eval pairs
+│   └── scripts/             # RAGAS + fact-checker accuracy runners
+├── infra/
+│   └── postgres/init/       # pgvector bootstrap
+├── docs/                  # Per-phase design-decision notes
+└── docker-compose.yml
 ```
 
-## Prerequisites
+---
 
-- Docker + Docker Compose
-- (For running services outside Docker) Python 3.11 and Node 20 + pnpm
+## `09` — Evaluation Methodology
 
-## Setup — run the full stack
+Every retrieval and agent-reasoning claim is measured, not assumed:
 
-```bash
-# 1. Create env files from the templates (do NOT commit the real ones).
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env.local
+- **RAGAS** — faithfulness, answer relevancy, context precision on a hand-curated golden set
+- **Fact-checker accuracy** — precision/recall on deliberately true and false claim injections
+- **CI eval-gate** — pull requests are blocked if faithfulness or fact-check accuracy regress below threshold
 
-# 2. Bring everything up (Postgres + pgvector, API, web).
-docker compose up --build
+> Results populate here once Phase 5 lands.
 
-# 3. Verify the API health check (reports DB reachability too).
-curl http://localhost:8000/health
-# => {"status":"ok","service":"consilium-api",...,"database":"ok"}
+---
 
-# Web dashboard:  http://localhost:3000  (/ redirects to /dashboard)
-```
+<div align="center">
 
-## Local development (without Docker)
+**Built by [Sheshakanth](https://github.com/sheshakanthra)**
+*AI Systems Engineering — B.Tech IT, Chennai Institute of Technology*
 
-**API**
-
-```bash
-cd apps/api
-python -m venv .venv && source .venv/Scripts/activate   # Git Bash on Windows
-pip install -r requirements.txt
-# Point DATABASE_URL at localhost (see .env.example) then:
-uvicorn app.main:app --reload
-pytest            # runs the health-check test
-```
-
-**Web**
-
-```bash
-cd apps/web
-pnpm install
-pnpm dev          # http://localhost:3000
-```
-
-> On Windows, run pnpm scripts via **Git Bash**, not PowerShell (CLAUDE.md).
-
-## Conventions
-
-Project rules — tech-stack locks, git discipline, agent/schema conventions, and
-the phase definition of "done" — live in [`CLAUDE.md`](CLAUDE.md).
+</div>
