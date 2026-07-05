@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     app_name: str = "consilium-api"
     environment: str = "development"
 
+    # Log level for the app's own loggers (the "consilium.*" namespace, which
+    # includes the per-call [llm] cost/token line). Configured at startup in
+    # app.main — without that config, INFO records are silently dropped.
+    log_level: str = "INFO"
+
     # --- Ingestion: source directories --------------------------------------
     # Where the ingestion layer looks for local sample inputs. Defaults are
     # repo-relative (host dev); docker-compose overrides them to the mounted
@@ -67,6 +72,25 @@ class Settings(BaseSettings):
     retrieval_min_similarity: float = 0.35
     # Reciprocal-rank-fusion constant for blending vector + keyword rankings.
     rrf_k: int = 60
+
+    # --- Agents: LLM (Phase 3) ----------------------------------------------
+    # Which provider the reasoning agents use, behind the shared llm_client seam.
+    # Default "groq" (free developer tier) while Anthropic credits are unavailable;
+    # switch to "anthropic" to use Claude via the same interface.
+    llm_provider: str = "groq"
+
+    # Anthropic (Claude) — paid. Optional so the app boots / tests run without it.
+    anthropic_api_key: str | None = None
+    # The Claude model used when llm_provider == "anthropic".
+    agent_model: str = "claude-haiku-4-5"
+
+    # Groq — free developer tier, OpenAI-compatible API.
+    groq_api_key: str | None = None
+    # Fast, current general-purpose production model (see docs/phase2 note).
+    groq_model: str = "llama-3.3-70b-versatile"
+
+    # Output cap for the small structured JSON the agents request (both providers).
+    agent_max_tokens: int = 2048
 
     model_config = SettingsConfigDict(
         env_file=".env",

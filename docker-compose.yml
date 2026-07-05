@@ -47,6 +47,14 @@ services:
       WHISPER_COMPUTE_TYPE: int8
       # Cache Whisper weights under the mounted HF cache so they download once.
       HF_HOME: /root/.cache/huggingface
+      # Agents (Phase 3): LLM reasoning, provider-selectable behind one seam.
+      # Keys/model passed through from the host env (unset is fine for
+      # ingestion/retrieval/tests; the chosen provider's key is needed for /research).
+      LLM_PROVIDER: ${LLM_PROVIDER:-groq}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      AGENT_MODEL: ${AGENT_MODEL:-claude-haiku-4-5}
     ports:
       - "8000:8000"
     volumes:

@@ -38,6 +38,13 @@ pgvector==0.3.6
 # graph (CLAUDE.md locks orchestration to LangGraph). Pulls langchain-core.
 # Ranged pin: the StateGraph/START/END API we use is stable across 0.2–0.4.
 langgraph>=0.2.50,<0.5
+# LLM providers for the reasoning agents (bull/bear/fact-checker). Both sit
+# behind the same llm_client seam; pick with LLM_PROVIDER (default groq).
+#   - anthropic: Claude (paid). output_config structured outputs.
+#   - openai: used as the OpenAI-COMPATIBLE client for Groq's free dev tier
+#     (base_url=https://api.groq.com/openai/v1), JSON mode + Pydantic validation.
+anthropic>=0.40.0
+openai>=1.30.0,<2
 
 # Test tooling (see tests/ — required for a phase to be "done" per CLAUDE.md).
 pytest==8.3.4

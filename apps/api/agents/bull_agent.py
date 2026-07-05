@@ -1,29 +1,28 @@
-"""bull_agent — the strongest evidence-backed *bullish* thesis.
+"""bull_agent — the strongest evidence-backed *bullish* thesis (LLM-driven).
 
 Charter (scoped system prompt below): argue the bull case for the ticker, but
-ONLY from what retrieval can support. It asks a fixed set of "what's going well?"
-probes; each sourced answer becomes a citation-carrying claim. The thesis summary
-is assembled from those claims, so the agent literally cannot introduce a claim
-that retrieval didn't back.
-
-LLM seam: replace ``_summarise`` (and, later, the probe selection) with a
-ReasonerLLM call using SYSTEM_PROMPT + the retrieved claims to produce fluent
-argumentation. The claim set — and thus the sourcing guarantee — stays intact.
+ONLY from what retrieval can support. The agent gathers stance-specific evidence
+from retrieval, then prompts **Claude** to construct the thesis and select/phrase
+the supporting claims. Every claim is re-anchored to a real retrieval citation in
+``reasoning.build_thesis`` — a claim that cites evidence we didn't supply is
+dropped — so the Claim schema's "citations required" guarantee is preserved even
+though the wording now comes from the LLM.
 """
 
 from __future__ import annotations
 
 from pydantic import BaseModel
 
-from agents.claims import gather_claims
 from agents.deps import AgentDeps
+from agents.reasoning import build_thesis
 from agents.types import Claim, ClaimStance
 
 SYSTEM_PROMPT = """\
 You are the Bull Agent. Build the strongest BULLISH investment thesis for the
-given company, citing only evidence returned by the Retrieval Agent. You may not
-introduce numbers, facts, or claims that retrieval did not return. If evidence is
-thin, say so rather than inventing support.
+given company, citing only the evidence provided to you (each item is tagged with
+an id like E1, E2). You may not introduce numbers, facts, or claims that the
+provided evidence does not contain. Every claim must cite exactly one evidence id.
+If the evidence is thin, say so rather than inventing support.
 """
 
 # Probes chosen to surface positive/growth evidence. Kept explicit and auditable.
@@ -45,22 +44,9 @@ class BullThesis(BaseModel):
     claims: list[Claim]
 
 
-def _summarise(ticker: str, claims: list[Claim]) -> str:
-    if not claims:
-        return f"No retrieval-supported bullish evidence was found for {ticker}."
-    return (
-        f"Bull case for {ticker} rests on {len(claims)} sourced point(s): "
-        + "; ".join(c.text.rstrip(".") for c in claims)
-        + "."
-    )
-
-
 class BullAgent:
     async def run(self, deps: AgentDeps, ticker: str) -> BullThesis:
-        async with deps.session_factory() as session:
-            claims = await gather_claims(
-                deps, session, ticker, _BULL_PROBES, ClaimStance.BULL
-            )
-        return BullThesis(
-            ticker=ticker, thesis_summary=_summarise(ticker, claims), claims=claims
+        summary, claims = await build_thesis(
+            deps, ticker, _BULL_PROBES, ClaimStance.BULL, SYSTEM_PROMPT
         )
+        return BullThesis(ticker=ticker, thesis_summary=summary, claims=claims)
