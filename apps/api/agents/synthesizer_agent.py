@@ -23,7 +23,7 @@ from pydantic import BaseModel
 from agents.bear_agent import BearThesis
 from agents.bull_agent import BullThesis
 from agents.fact_checker_agent import ClaimLabel, FactCheckReport
-from agents.quant_agent import QuantSignal
+from agents.quant_agent import QuantDirection, QuantSignal
 from agents.types import ClaimStance
 from retrieval.types import Citation
 
@@ -65,6 +65,47 @@ def _dedup_citations(citations: list[Citation]) -> list[Citation]:
     return unique
 
 
+def _qualitative_stance(n_bull: int, n_bear: int) -> QuantDirection:
+    """Reduce the fact-checked bull/bear balance to a single directional lean.
+
+    This is what the quant signal is compared *against* — the qualitative thesis
+    reads bullish if more supported claims are bull-side, bearish if more are
+    bear-side, otherwise neutral/balanced.
+    """
+    if n_bull > n_bear:
+        return QuantDirection.BULLISH
+    if n_bear > n_bull:
+        return QuantDirection.BEARISH
+    return QuantDirection.NEUTRAL
+
+
+def _quant_agreement(qualitative: QuantDirection, quant: QuantSignal) -> str:
+    """One sentence on whether the quant signal agrees with the thesis.
+
+    Kept explicit (same spirit as the placeholder did) so the reader always sees
+    where the price-based signal and the narrative diverge — a disagreement is
+    signal, not something to paper over.
+    """
+    q = quant.direction
+    conf = f"{quant.confidence:.0%} confidence over {quant.horizon}"
+    if q is QuantDirection.NEUTRAL or qualitative is QuantDirection.NEUTRAL:
+        return (
+            f"Quant signal is {q.value} ({conf}); the qualitative thesis is "
+            f"{qualitative.value} — no strong directional (dis)agreement to flag."
+        )
+    if q is qualitative:
+        return (
+            f"Quant signal is {q.value} ({conf}), AGREEING with the "
+            f"{qualitative.value} qualitative thesis — the price trend corroborates "
+            "the narrative."
+        )
+    return (
+        f"Quant signal is {q.value} ({conf}), DISAGREEING with the "
+        f"{qualitative.value} qualitative thesis — the price trend and the "
+        "fundamental narrative point opposite ways; treat with caution."
+    )
+
+
 def _summary(
     ticker: str, supported: list[NoteClaim], disputed: list[NoteClaim], quant: QuantSignal
 ) -> str:
@@ -78,10 +119,8 @@ def _summary(
         parts.append(
             "Disputed/unverifiable items are flagged and excluded from the core thesis."
         )
-    parts.append(
-        f"Quant signal: {quant.direction.value}"
-        + (" (placeholder)." if quant.is_placeholder else ".")
-    )
+    parts.append(_quant_agreement(_qualitative_stance(n_bull, n_bear), quant))
+    parts.append("Quant is a supporting technical signal, not investment advice.")
     return " ".join(parts)
 
 

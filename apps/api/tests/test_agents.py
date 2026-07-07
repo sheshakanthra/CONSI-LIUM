@@ -136,9 +136,13 @@ async def test_graph_runs_end_to_end(state, ticker):
     assert isinstance(note, ResearchNote)
     assert note.ticker == ticker
     assert note.thesis_summary.strip()
-    # Quant stub is present and well-formed.
-    assert note.quant_signal.is_placeholder is True
+    # Quant signal is present, real (Phase 4 — no longer a placeholder), and
+    # well-formed.
+    assert note.quant_signal.is_placeholder is False
     assert note.quant_signal.direction.value in {"bullish", "bearish", "neutral"}
+    assert 0.0 <= note.quant_signal.confidence <= 1.0
+    assert note.quant_signal.horizon.strip()
+    assert note.quant_signal.reasoning.strip()
     assert len(note.quant_signal.series) > 0
 
 
