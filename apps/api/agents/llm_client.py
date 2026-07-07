@@ -24,8 +24,9 @@ import json
 import logging
 from typing import Any, TypeVar
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
+from agents.guardrails import SchemaValidationError, parse_with_retry
 from app.config import Settings, get_settings
 
 logger = logging.getLogger("consilium.agents.llm")
@@ -177,15 +178,16 @@ class LLMClient:
     ) -> tuple[T, LLMUsage]:
         """Call the configured LLM and return (validated object, usage).
 
-        Retries with a stricter prompt on schema-validation failure. Provider-
-        agnostic: validation, retry, and logging are identical for Groq/Anthropic.
+        The schema-validation + stricter-reprompt retry is NOT implemented here —
+        it's the shared guardrail in ``agents.guardrails.parse_with_retry`` that
+        every agent goes through. This method only supplies the provider-specific
+        ``produce`` step (one raw completion + usage) and the logging hooks; the
+        retry policy is identical for Groq/Anthropic because it lives in one place.
         """
-        prompt = user
-        last_err: Exception | None = None
 
-        for attempt in range(max_retries + 1):
+        async def produce(prompt: str, attempt: int) -> tuple[str | None, LLMUsage]:
             # Request line — fires before the provider call (so it's visible even
-            # if the call errors); the usage/cost line below fires on success.
+            # if the call errors); the usage/cost line fires right after.
             logger.info(
                 "[llm] provider=%s agent=%s model=%s calling (attempt=%d)",
                 self._provider, agent, self._model, attempt,
@@ -202,26 +204,25 @@ class LLMClient:
                 self._provider, agent, usage.model, usage.input_tokens,
                 usage.output_tokens, usage.cost_usd, attempt,
             )
+            return text, usage
 
-            try:
-                if not text:
-                    raise ValueError("empty LLM response")
-                return schema.model_validate_json(text), usage
-            except (ValidationError, ValueError, json.JSONDecodeError) as exc:
-                last_err = exc
-                logger.warning(
-                    "[llm] provider=%s agent=%s invalid response (attempt=%d): %s",
-                    self._provider, agent, attempt, exc,
-                )
-                prompt = (
-                    user
-                    + "\n\nIMPORTANT: your previous reply was invalid: "
-                    + str(exc)[:200]
-                    + ". Reply with ONLY a JSON object that exactly matches the required "
-                    "schema — no prose, no markdown, no code fences."
-                )
+        def _log_invalid(attempt: int, exc: Exception) -> None:
+            logger.warning(
+                "[llm] provider=%s agent=%s invalid response (attempt=%d): %s",
+                self._provider, agent, attempt, exc,
+            )
 
-        raise AgentLLMError(
-            f"LLM call for {agent} ({self._provider}) failed schema validation after "
-            f"{max_retries + 1} attempts: {last_err}"
-        ) from last_err
+        try:
+            return await parse_with_retry(
+                produce=produce,
+                schema=schema,
+                base_prompt=user,
+                max_retries=max_retries,
+                on_invalid=_log_invalid,
+            )
+        except SchemaValidationError as exc:
+            # Preserve the public contract: agents catch AgentLLMError, not the
+            # guardrail's internal error type.
+            raise AgentLLMError(
+                f"LLM call for {agent} ({self._provider}) {exc}"
+            ) from exc

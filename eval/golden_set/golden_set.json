@@ -1,0 +1,363 @@
+{
+  "_meta": {
+    "description": "Hand-written golden set for the CONSILIUM eval harness. Every entry was verified against the live retrieval/agent stack on the two synthetic sample filings (sample_filing_01 -> ACME, sample_filing_02 -> GLOBEX). See eval/golden_set/README.md for the field schema and eval/scripts/ for the runners.",
+    "corpus": [
+      {"ticker": "ACME", "company": "Acme Industries Ltd.", "filing": "sample_filing_01.pdf"},
+      {"ticker": "GLOBEX", "company": "Globex Corporation Ltd.", "filing": "sample_filing_02.pdf"}
+    ],
+    "categories": {
+      "table_qa": "answer is a structured cell from filing_tables",
+      "document_qa": "answer is extracted prose from filing_chunks",
+      "insufficient": "unanswerable from the corpus; the system MUST refuse (no citation)",
+      "research": "full /research graph run; scored structurally (supported claims + citations + quant)"
+    }
+  },
+  "entries": [
+    {
+      "id": "tq-acme-rev-q1fy27",
+      "category": "table_qa",
+      "ticker": "ACME",
+      "question": "What was revenue in Q1 FY27?",
+      "ground_truth": "Revenue for Q1 FY27 was 1,245 (INR crore).",
+      "answer_contains": ["1,245"],
+      "expected_citation": {"source_type": "table", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "tq-acme-rev-q1fy26",
+      "category": "table_qa",
+      "ticker": "ACME",
+      "question": "What was revenue in Q1 FY26?",
+      "ground_truth": "Revenue for Q1 FY26 was 1,090 (INR crore).",
+      "answer_contains": ["1,090"],
+      "expected_citation": {"source_type": "table", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "tq-acme-rev-yoy",
+      "category": "table_qa",
+      "ticker": "ACME",
+      "question": "What was the year-on-year revenue growth?",
+      "ground_truth": "Revenue grew 14.2% year on year.",
+      "answer_contains": ["14.2"],
+      "expected_citation": {"source_type": "table", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "tq-acme-ebitda-q1fy27",
+      "category": "table_qa",
+      "ticker": "ACME",
+      "question": "What was EBITDA in Q1 FY27?",
+      "ground_truth": "EBITDA for Q1 FY27 was 312 (INR crore).",
+      "answer_contains": ["312"],
+      "expected_citation": {"source_type": "table", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "tq-acme-ebitda-q1fy26",
+      "category": "table_qa",
+      "ticker": "ACME",
+      "question": "What was EBITDA in Q1 FY26?",
+      "ground_truth": "EBITDA for Q1 FY26 was 255 (INR crore).",
+      "answer_contains": ["255"],
+      "expected_citation": {"source_type": "table", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "tq-acme-ebitda-yoy",
+      "category": "table_qa",
+      "ticker": "ACME",
+      "question": "What was EBITDA year-on-year growth?",
+      "ground_truth": "EBITDA grew 22.4% year on year.",
+      "answer_contains": ["22.4"],
+      "expected_citation": {"source_type": "table", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "tq-acme-netprofit",
+      "category": "table_qa",
+      "ticker": "ACME",
+      "question": "What was net profit?",
+      "ground_truth": "Net profit was 188 (INR crore) in Q1 FY27.",
+      "answer_contains": ["188"],
+      "expected_citation": {"source_type": "table", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "tq-acme-netprofit-yoy",
+      "category": "table_qa",
+      "ticker": "ACME",
+      "question": "What was net profit YoY growth?",
+      "ground_truth": "Net profit grew 33.3% year on year.",
+      "answer_contains": ["33.3"],
+      "expected_citation": {"source_type": "table", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "tq-acme-eps-q1fy27",
+      "category": "table_qa",
+      "ticker": "ACME",
+      "question": "What was EPS?",
+      "ground_truth": "EPS was INR 9.40 in Q1 FY27.",
+      "answer_contains": ["9.40"],
+      "expected_citation": {"source_type": "table", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "tq-acme-eps-q1fy26",
+      "category": "table_qa",
+      "ticker": "ACME",
+      "question": "What was EPS in Q1 FY26?",
+      "ground_truth": "EPS was INR 7.05 in Q1 FY26.",
+      "answer_contains": ["7.05"],
+      "expected_citation": {"source_type": "table", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "tq-globex-cloud-fy26",
+      "category": "table_qa",
+      "ticker": "GLOBEX",
+      "question": "What was Cloud Services revenue in FY26?",
+      "ground_truth": "Cloud Services revenue in FY26 was 4,120 (INR crore).",
+      "answer_contains": ["4,120"],
+      "expected_citation": {"source_type": "table", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "tq-globex-cloud-growth",
+      "category": "table_qa",
+      "ticker": "GLOBEX",
+      "question": "What was Cloud Services growth?",
+      "ground_truth": "Cloud Services grew 24.8%.",
+      "answer_contains": ["24.8"],
+      "expected_citation": {"source_type": "table", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "tq-globex-hw-fy26",
+      "category": "table_qa",
+      "ticker": "GLOBEX",
+      "question": "What was Hardware revenue in FY26?",
+      "ground_truth": "Hardware revenue in FY26 was 2,050 (INR crore).",
+      "answer_contains": ["2,050"],
+      "expected_citation": {"source_type": "table", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "tq-globex-hw-fy25",
+      "category": "table_qa",
+      "ticker": "GLOBEX",
+      "question": "What was Hardware revenue in FY25?",
+      "ground_truth": "Hardware revenue in FY25 was 2,180 (INR crore).",
+      "answer_contains": ["2,180"],
+      "expected_citation": {"source_type": "table", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "tq-globex-hw-growth",
+      "category": "table_qa",
+      "ticker": "GLOBEX",
+      "question": "What was Hardware growth?",
+      "ground_truth": "Hardware declined 6.0% (growth of -6.0%).",
+      "answer_contains": ["-6.0"],
+      "expected_citation": {"source_type": "table", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "tq-globex-total-fy26",
+      "category": "table_qa",
+      "ticker": "GLOBEX",
+      "question": "What was total revenue in FY26?",
+      "ground_truth": "Total revenue in FY26 was 7,930 (INR crore).",
+      "answer_contains": ["7,930"],
+      "expected_citation": {"source_type": "table", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "tq-globex-total-growth",
+      "category": "table_qa",
+      "ticker": "GLOBEX",
+      "question": "What was total growth?",
+      "ground_truth": "Total revenue grew 12.9%.",
+      "answer_contains": ["12.9"],
+      "expected_citation": {"source_type": "table", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "dq-acme-board",
+      "category": "document_qa",
+      "ticker": "ACME",
+      "question": "What did the board recommend?",
+      "ground_truth": "The board recommended an interim dividend, subject to approval.",
+      "answer_contains": ["dividend"],
+      "expected_citation": {"source_type": "chunk", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "dq-acme-margins",
+      "category": "document_qa",
+      "ticker": "ACME",
+      "question": "Why did margins expand?",
+      "ground_truth": "Margins expanded due to lower input costs.",
+      "answer_contains": ["margins expanded"],
+      "expected_citation": {"source_type": "chunk", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "dq-acme-period",
+      "category": "document_qa",
+      "ticker": "ACME",
+      "question": "For which period were results reported?",
+      "ground_truth": "For the quarter ended 30 June 2026.",
+      "answer_contains": ["30 June 2026"],
+      "expected_citation": {"source_type": "chunk", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "dq-acme-synthetic",
+      "category": "document_qa",
+      "ticker": "ACME",
+      "question": "Is this a real filing?",
+      "ground_truth": "No. It is a synthetic sample used for pipeline testing and does not represent a real filing.",
+      "answer_contains": ["synthetic sample"],
+      "expected_citation": {"source_type": "chunk", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "dq-globex-netdebt",
+      "category": "document_qa",
+      "ticker": "GLOBEX",
+      "question": "What happened to net debt?",
+      "ground_truth": "Management highlighted improved working-capital efficiency and a reduction in net debt.",
+      "answer_contains": ["net debt"],
+      "expected_citation": {"source_type": "chunk", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "dq-globex-guidance",
+      "category": "document_qa",
+      "ticker": "GLOBEX",
+      "question": "What was the guidance for the coming year?",
+      "ground_truth": "Guidance for the coming year was maintained.",
+      "answer_contains": ["maintained"],
+      "expected_citation": {"source_type": "chunk", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "dq-globex-fy",
+      "category": "document_qa",
+      "ticker": "GLOBEX",
+      "question": "For which financial year were the results?",
+      "ground_truth": "For the financial year ended 31 March 2026.",
+      "answer_contains": ["31 March"],
+      "expected_citation": {"source_type": "chunk", "page": 1},
+      "sufficient": true
+    },
+    {
+      "id": "ins-acme-color",
+      "category": "insufficient",
+      "ticker": "ACME",
+      "question": "What is the CEO's favorite color?",
+      "ground_truth": "Insufficient evidence in the retrieved sources to answer this question.",
+      "answer_contains": ["insufficient evidence"],
+      "expected_citation": null,
+      "sufficient": false
+    },
+    {
+      "id": "ins-acme-employees",
+      "category": "insufficient",
+      "ticker": "ACME",
+      "question": "How many employees does the company have?",
+      "ground_truth": "Insufficient evidence in the retrieved sources to answer this question.",
+      "answer_contains": ["insufficient evidence"],
+      "expected_citation": null,
+      "sufficient": false
+    },
+    {
+      "id": "ins-acme-cashflow",
+      "category": "insufficient",
+      "ticker": "ACME",
+      "question": "What was cash flow from operations?",
+      "ground_truth": "Insufficient evidence in the retrieved sources to answer this question.",
+      "answer_contains": ["insufficient evidence"],
+      "expected_citation": null,
+      "sufficient": false
+    },
+    {
+      "id": "ins-acme-de-ratio",
+      "category": "insufficient",
+      "ticker": "ACME",
+      "question": "What is the debt-to-equity ratio?",
+      "ground_truth": "Insufficient evidence in the retrieved sources to answer this question.",
+      "answer_contains": ["insufficient evidence"],
+      "expected_citation": null,
+      "sufficient": false
+    },
+    {
+      "id": "ins-acme-ceo",
+      "category": "insufficient",
+      "ticker": "ACME",
+      "question": "Who is the CEO?",
+      "ground_truth": "Insufficient evidence in the retrieved sources to answer this question.",
+      "answer_contains": ["insufficient evidence"],
+      "expected_citation": null,
+      "sufficient": false
+    },
+    {
+      "id": "ins-globex-dps",
+      "category": "insufficient",
+      "ticker": "GLOBEX",
+      "question": "What was the dividend per share?",
+      "ground_truth": "Insufficient evidence in the retrieved sources to answer this question.",
+      "answer_contains": ["insufficient evidence"],
+      "expected_citation": null,
+      "sufficient": false
+    },
+    {
+      "id": "ins-globex-buyback",
+      "category": "insufficient",
+      "ticker": "GLOBEX",
+      "question": "Is there a share buyback planned?",
+      "ground_truth": "Insufficient evidence in the retrieved sources to answer this question.",
+      "answer_contains": ["insufficient evidence"],
+      "expected_citation": null,
+      "sufficient": false
+    },
+    {
+      "id": "ins-globex-mcap",
+      "category": "insufficient",
+      "ticker": "GLOBEX",
+      "question": "What is the market capitalization?",
+      "ground_truth": "Insufficient evidence in the retrieved sources to answer this question.",
+      "answer_contains": ["insufficient evidence"],
+      "expected_citation": null,
+      "sufficient": false
+    },
+    {
+      "id": "res-acme",
+      "category": "research",
+      "ticker": "ACME",
+      "question": "Produce a fact-checked research note for ACME.",
+      "ground_truth": "A research note whose supported claims are drawn from the ACME filing (revenue/EBITDA/net profit/EPS figures, interim dividend), each carrying a citation, plus a quant signal and a bull/bear agreement note.",
+      "answer_contains": [],
+      "expected_citation": {"source_type": "any", "page": 1},
+      "sufficient": true,
+      "min_supported_claims": 1,
+      "require_citations": true,
+      "require_quant": true
+    },
+    {
+      "id": "res-globex",
+      "category": "research",
+      "ticker": "GLOBEX",
+      "question": "Produce a fact-checked research note for GLOBEX.",
+      "ground_truth": "A research note whose supported claims are drawn from the GLOBEX filing (segment revenues, working-capital/net-debt commentary, maintained guidance), each carrying a citation, plus a quant signal and a bull/bear agreement note.",
+      "answer_contains": [],
+      "expected_citation": {"source_type": "any", "page": 1},
+      "sufficient": true,
+      "min_supported_claims": 1,
+      "require_citations": true,
+      "require_quant": true
+    }
+  ]
+}

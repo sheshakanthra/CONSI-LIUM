@@ -1,0 +1,162 @@
+name: eval-gate
+
+# Runs the golden-set eval on every PR (and pushes to main) and FAILS the build
+# if quality regresses below the thresholds set below. Two independent gates:
+#
+#   1. golden-and-factcheck  — the reliable core gate:
+#        * deterministic golden eval (no LLM): answer + refusal correctness
+#        * fact-checker accuracy (the project's core differentiator; uses the LLM)
+#   2. ragas                 — semantic faithfulness gate (LLM judge, bounded
+#        sample count to respect free-tier token limits).
+#
+# The two are separate jobs because RAGAS pins langchain-core to a line that
+# conflicts with LangGraph (see eval/requirements-eval.txt) — they can't share a
+# venv, so they don't.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  # Retrieval/agent config, sourced from env (no .env file in CI).
+  DATABASE_URL: postgresql+asyncpg://consilium:consilium@localhost:5432/consilium
+  FILINGS_DIR: data/filings
+  TRANSCRIPTS_DIR: data/transcripts
+  EMBEDDING_CACHE_DIR: /home/runner/.cache/fastembed
+  LLM_PROVIDER: groq
+  # 8b-instant, not 70b: it has a far larger free-tier daily token budget, which
+  # keeps the LLM-dependent gates from flaking on the token-per-day cap.
+  GROQ_MODEL: llama-3.1-8b-instant
+  # So the eval scripts (in eval/) can import the service package (in apps/api)
+  # and find the golden set, regardless of CWD.
+  CONSILIUM_API_DIR: apps/api
+  CONSILIUM_GOLDEN_SET: eval/golden_set/golden_set.json
+
+jobs:
+  golden-and-factcheck:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: consilium
+          POSTGRES_PASSWORD: consilium
+          POSTGRES_DB: consilium
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U consilium"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: apps/api/requirements.txt
+      - uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/fastembed
+          key: fastembed-bge-small-v1
+      - name: Install service deps
+        run: pip install -r apps/api/requirements.txt
+
+      - name: Enable pgvector extension
+        run: |
+          python - <<'PY'
+          import asyncio, asyncpg
+          async def main():
+              conn = await asyncpg.connect(
+                  "postgresql://consilium:consilium@localhost:5432/consilium")
+              await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+              await conn.close()
+          asyncio.run(main())
+          PY
+
+      - name: Ingest + index the sample corpus
+        working-directory: apps/api
+        run: |
+          python -m ingestion.generate_samples
+          python -m ingestion.run filings
+          python -m retrieval.index
+
+      - name: Gate 1 — deterministic golden eval (answer + refusal)
+        # No LLM needed; --skip-research keeps this hermetic and free.
+        run: >-
+          python eval/scripts/run_golden_eval.py
+          --skip-research
+          --min-answer-accuracy 0.90
+          --min-refusal-accuracy 1.00
+
+      - name: Gate 2 — fact-checker accuracy
+        # Skipped only when no key is configured (e.g. a fork PR).
+        if: ${{ secrets.GROQ_API_KEY != '' }}
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        # Threshold 0.85 (not 0.90): CI judges with the 8B model to fit the free
+        # token budget, which scored 15/16 (93.8%) vs the 70B default's 16/16.
+        # 0.85 leaves headroom for one extra narrative miss without flaking.
+        run: python eval/scripts/eval_factchecker.py --min-accuracy 0.85
+
+  ragas:
+    runs-on: ubuntu-latest
+    # Only runs when a Groq key is configured (skipped on forks without secrets).
+    if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: consilium
+          POSTGRES_PASSWORD: consilium
+          POSTGRES_DB: consilium
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U consilium"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/fastembed
+          key: fastembed-bge-small-v1
+      - name: Install service + eval deps
+        # eval requirements downgrade langchain-core (RAGAS pin); harmless here
+        # because this job never imports LangGraph — only the retrieval path.
+        run: |
+          pip install -r apps/api/requirements.txt
+          pip install -r eval/requirements-eval.txt
+
+      - name: Enable pgvector extension
+        run: |
+          python - <<'PY'
+          import asyncio, asyncpg
+          async def main():
+              conn = await asyncpg.connect(
+                  "postgresql://consilium:consilium@localhost:5432/consilium")
+              await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+              await conn.close()
+          asyncio.run(main())
+          PY
+
+      - name: Ingest + index the sample corpus
+        working-directory: apps/api
+        run: |
+          python -m ingestion.generate_samples
+          python -m ingestion.run filings
+          python -m retrieval.index
+
+      - name: Gate 3 — RAGAS faithfulness
+        if: ${{ secrets.GROQ_API_KEY != '' }}
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        # --limit bounds token spend on the free tier; faithfulness is the gated
+        # metric (the hallucination guard). Threshold set from measured runs.
+        run: >-
+          python eval/scripts/run_ragas.py
+          --limit 8
+          --max-workers 2
+          --min-faithfulness 0.75

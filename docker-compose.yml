@@ -33,8 +33,19 @@ services:
   api:
     build:
       context: ./apps/api
+    # LLM secrets + provider selection come from apps/api/.env (gitignored, so it
+    # holds the real keys). `required: false` keeps a fresh checkout — which has
+    # no .env yet — able to `up` for ingestion/retrieval/tests; only /research
+    # needs the key. NOTE: values in the `environment:` block below OVERRIDE
+    # env_file, so anything that must differ per-container (DB host, /data paths)
+    # lives there, while the keys are intentionally NOT repeated there so the
+    # .env values win.
+    env_file:
+      - path: apps/api/.env
+        required: false
     environment:
       # Note the service name "db" as host — compose's internal DNS resolves it.
+      # Overrides the host-oriented DATABASE_URL in .env with the in-network one.
       DATABASE_URL: postgresql+asyncpg://consilium:consilium@db:5432/consilium
       APP_NAME: consilium-api
       ENVIRONMENT: development
@@ -47,14 +58,11 @@ services:
       WHISPER_COMPUTE_TYPE: int8
       # Cache Whisper weights under the mounted HF cache so they download once.
       HF_HOME: /root/.cache/huggingface
-      # Agents (Phase 3): LLM reasoning, provider-selectable behind one seam.
-      # Keys/model passed through from the host env (unset is fine for
-      # ingestion/retrieval/tests; the chosen provider's key is needed for /research).
-      LLM_PROVIDER: ${LLM_PROVIDER:-groq}
-      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      # Model id isn't a secret and isn't in .env, so it stays here with a
+      # sensible default (still shell-overridable). The provider + API keys
+      # (LLM_PROVIDER / GROQ_API_KEY / ANTHROPIC_API_KEY / AGENT_MODEL) are
+      # supplied by env_file above — do NOT re-add them here or they'd shadow it.
       GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      AGENT_MODEL: ${AGENT_MODEL:-claude-haiku-4-5}
     ports:
       - "8000:8000"
     volumes:
