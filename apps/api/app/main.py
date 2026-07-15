@@ -9,12 +9,14 @@ import logging
 import sys
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.config import Settings, get_settings
 from app.db import engine
 from agents.api import router as research_router
 from retrieval.api import router as qa_router
+from retrieval.sources_api import router as sources_router
 
 settings = get_settings()
 
@@ -57,8 +59,38 @@ app = FastAPI(
     description="CONSILIUM API — ingestion + retrieval/QA + multi-agent research.",
 )
 
+# CORS. The dashboard is served from a different origin (:3000) than this API
+# (:8000), so the browser preflights and blocks cross-origin fetches without
+# these headers. Registered BEFORE the routers so it wraps every route,
+# including the OPTIONS preflight CORSMiddleware answers on their behalf.
+#
+# WHY the allowlist is explicit and not "*": the API is read-only today, but
+# `allow_origins=["*"]` is the kind of default that quietly outlives the
+# prototype. The origins come from config so production narrows them via env
+# (CORS_ALLOWED_ORIGINS) rather than a code change.
+#
+# WHY allow_credentials is False: the API has no cookie/session auth, so
+# credentialed requests are meaningless here — and enabling it would forbid the
+# "*" wildcard anyway. Revisit if auth lands.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins_list,
+    allow_credentials=False,
+    # The dashboard only reads. Listing the verbs beats "*" so an unintended
+    # write endpoint isn't reachable from a browser the day it's added.
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Accept"],
+)
+
+logging.getLogger("consilium.api").info(
+    "CORS allowed origins: %s", settings.cors_origins_list
+)
+
 # Retrieval/QA endpoints (POST /qa).
 app.include_router(qa_router)
+# Citation resolution (GET /sources/{source_type}/{source_id}) — backs the
+# dashboard's drill-down from a claim's citation to the source page/cell.
+app.include_router(sources_router)
 # Multi-agent research endpoint (GET /research/{ticker}).
 app.include_router(research_router)
 
