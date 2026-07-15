@@ -17,7 +17,7 @@
 <br/>
 
 [![Status](https://img.shields.io/badge/status-active--development-yellow?style=flat-square)]()
-[![Phase](https://img.shields.io/badge/phase-1%20%2F%207-blue?style=flat-square)]()
+[![Phase](https://img.shields.io/badge/phase-6%20%2F%207-blue?style=flat-square)]()
 [![Build](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)]()
 
 </div>
@@ -137,12 +137,25 @@ git clone https://github.com/sheshakanthra/CONSI-LIUM.git consilium
 cd consilium
 
 # environment
+# The API needs an LLM key (LLM_PROVIDER / GROQ_API_KEY) for /research.
 cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env
+
+# Only needed to run the web app OUTSIDE Docker (`pnpm dev`) — docker-compose
+# already supplies NEXT_PUBLIC_API_BASE_URL to the web container.
+cp apps/web/.env.example apps/web/.env.local
 
 # boot the full stack
 docker-compose up
 ```
+
+Then open the dashboard, enter a ticker (`ACME` or `GLOBEX` for the bundled
+synthetic filings), and click through any citation to see the source page or
+table cell it resolves to.
+
+> **First run:** the sample filings must be ingested and indexed before a ticker
+> has any evidence — see [`docs/phase1-ingestion.md`](docs/phase1-ingestion.md)
+> and [`docs/phase2-rag.md`](docs/phase2-rag.md). A ticker with no indexed
+> filings returns a valid, empty note rather than an error.
 
 | Service | URL |
 |---|---|
@@ -180,7 +193,22 @@ Every retrieval and agent-reasoning claim is measured, not assumed:
 - **Fact-checker accuracy** — precision/recall on deliberately true and false claim injections
 - **CI eval-gate** — pull requests are blocked if faithfulness or fact-check accuracy regress below threshold
 
-> Results populate here once Phase 5 lands.
+### Measured results
+
+| Metric | Score | n |
+|---|---|---|
+| Golden answer accuracy (table + document QA) | **100%** | 24 |
+| Refusal accuracy (unanswerable → refuse, no citation) | **100%** | 8 |
+| Fact-checker accuracy (70B judge) | **100%** | 16 |
+| RAGAS faithfulness | **0.93** | 24 |
+| RAGAS answer relevancy | **0.85** | 24 |
+| RAGAS context precision | **1.00** | 24 |
+
+> **Read these honestly:** they are measured on a **two-document synthetic
+> corpus**, so they're ceiling-heavy by construction. The harness's value is
+> regression-detection and methodology, not a claim of broad real-world
+> accuracy. Full caveats — including the 8B-vs-70B judge swap forced by the
+> free-tier token cap — are in [`docs/phase5-eval.md`](docs/phase5-eval.md).
 
 ---
 
