@@ -1,0 +1,10 @@
+# Written by pnpm 11 on install. `sharp` is pulled in by Next.js for image
+# optimisation and needs a native build step; pnpm refuses to run it until it is
+# explicitly allowed, and leaves a placeholder here until a value is set.
+#
+# Approving it keeps LOCAL installs non-interactive. It does NOT affect the
+# Docker image: apps/web/Dockerfile only COPYs `package.json` and `.npmrc`, so
+# this file never reaches the build — which is why that Dockerfile still needs
+# its own install / approve-builds / install dance (see the comments there).
+allowBuilds:
+  sharp: true
